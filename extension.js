@@ -9,23 +9,20 @@ const AltTab = imports.ui.altTab;
 const SwitcherPopup = imports.ui.switcherPopup;
 const St = imports.gi.St;
 const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
 
 
-let oldCreateSwitcherPopup;//mine
-let oldInitAppSwitcher;//mine
-let oldAddSeparator;//mine
-
-let button;//test
+let oldCreateSwitcherPopup;
+let oldInitAppSwitcher;
+let oldAddSeparator;
 
 function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    var parent = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._init);
    var addSep = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._addSeparator);
 
-   //3.8
+   //gnome-shell 3.8
    parent(true);
 
-   //3.6
+   //gnome-shell 3.6 part
 
    // Construct the AppIcons, add to the popup
    let activeWorkspace = global.screen.get_active_workspace();
@@ -58,7 +55,7 @@ function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    this._altTabPopup = altTabPopup;
    this._mouseTimeOutId = 0;
 
-   //3.8
+   //and end with a gnome-shell 3.8 part
    this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
 }
 
@@ -101,33 +98,19 @@ function newAddSeparator() {
 
 
 function init() {
-   //test
-   button = new St.Bin({ style_class: 'panel-button',
-      reactive: true,
-          can_focus: true,
-          x_fill: true,
-          y_fill: false,
-          track_hover: true });
-   let icon = new St.Icon({ icon_name: 'system-run-symbolic',
-      style_class: 'system-status-icon' });
-
-   button.set_child(icon);
-   //end of test
-   oldCreateSwitcherPopup = AltTab.AppSwitcherPopup.prototype._createSwitcher;//mine
-   oldInitAppSwitcher = AltTab.AppSwitcher.prototype._init;//mine
-   oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator;//mine
+   oldCreateSwitcherPopup = AltTab.AppSwitcherPopup.prototype._createSwitcher;
+   oldInitAppSwitcher = AltTab.AppSwitcher.prototype._init;
+   oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator;
 }
 
 function enable() {
-   Main.panel._rightBox.insert_child_at_index(button, 0);//test
-   AltTab.AppSwitcherPopup.prototype._createSwitcher = newCreateSwitcherPopup;//mine
-   AltTab.AppSwitcher.prototype._init = _newInitAppSwitcher;//mine
-   SwitcherPopup.SwitcherList.prototype._addSeparator = newAddSeparator;//mine
+   AltTab.AppSwitcherPopup.prototype._createSwitcher = newCreateSwitcherPopup;
+   AltTab.AppSwitcher.prototype._init = _newInitAppSwitcher;
+   SwitcherPopup.SwitcherList.prototype._addSeparator = newAddSeparator;
 }
 
 function disable() {
-   Main.panel._rightBox.remove_child(button);//test
-   AltTab.AppSwitcherPopup.prototype._createSwitcher = oldCreateSwitcherPopup;//mine
-   AltTab.AppSwitcher.prototype._init = oldInitAppSwitcher;//mine
-   SwitcherPopup.SwitcherList.prototype._addSeparator = oldAddSeparator;//mine
+   AltTab.AppSwitcherPopup.prototype._createSwitcher = oldCreateSwitcherPopup;
+   AltTab.AppSwitcher.prototype._init = oldInitAppSwitcher;
+   SwitcherPopup.SwitcherList.prototype._addSeparator = oldAddSeparator;
 }

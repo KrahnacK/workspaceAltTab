@@ -11,6 +11,8 @@ re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab:
  - mv workspaceAltTab workspaceAltTab@hotwok
  - restart gnome-shell: Alt+F2 + r, or gnome-shell --replace & 
 
+* Known bugs:
+ - Separator does not show up
 
 * Debug instructions for gnome-shell extensions: 
  - see the logs in ~/.cache/gdm/session.log or ~/.xsession-errors
