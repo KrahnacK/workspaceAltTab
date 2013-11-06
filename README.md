@@ -12,9 +12,7 @@ re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab:
  - restart gnome-shell: Alt+F2 + r, or gnome-shell --replace & 
 
 
-* BUGS: 
- - dead windows linger on top...(should be destroyed but are not)
-
-debug gnome-shell extensions: see the logs in ~/.cache/gdm/session.log or ~/.xsession-errors
-if none of the above work, then get the shell to output in a file: gnome-shell --replace &> shelllog &
+* Debug instructions for gnome-shell extensions: 
+ - see the logs in ~/.cache/gdm/session.log or ~/.xsession-errors
+ - if none of the above work, then get the shell to output in a file: gnome-shell --replace &> shelllog &
 
