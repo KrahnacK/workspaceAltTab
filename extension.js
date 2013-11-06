@@ -6,28 +6,67 @@ const Meta = imports.gi.Meta;
 const Shell = imports.gi.Shell;
 
 const AltTab = imports.ui.altTab;
+const SwitcherPopup = imports.ui.switcherPopup;
 const St = imports.gi.St;
 const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 
 
-let oldGetAppList;//mine
+let oldCreateSwitcherPopup;//mine
+let oldInitAppSwitcher;//mine
+let oldAddSeparator;//mine
 
 let button;//test
 
-function newGetAppList() {
-   /*
-    * from gnome-shell 3.6
-    */
-   /*
-   let tracker = Shell.WindowTracker.get_default();
-   let appSys = Shell.AppSystem.get_default();
-   let allApps = appSys.get_running ();
+function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
+   var parent = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._init);
+   var addSep = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._addSeparator);
 
-   let screen = global.screen;
-   let display = screen.get_display();
-   let windows = display.get_tab_list(Meta.TabList.NORMAL_ALL, screen,
-         screen.get_active_workspace());
+   //3.8
+   parent(true);
+
+   //3.6
+
+   // Construct the AppIcons, add to the popup
+   let activeWorkspace = global.screen.get_active_workspace();
+   let workspaceIcons = [];
+   let otherIcons = [];
+   for (let i = 0; i < localApps.length; i++) {
+      let appIcon = new AltTab.AppIcon(localApps[i]);
+      // Cache the window list now; we don't handle dynamic changes here,
+      // and we don't want to be continually retrieving it
+      appIcon.cachedWindows = appIcon.app.get_windows();
+      workspaceIcons.push(appIcon);
+   }
+   for (let i = 0; i < otherApps.length; i++) {
+      let appIcon = new AltTab.AppIcon(otherApps[i]);
+      appIcon.cachedWindows = appIcon.app.get_windows();
+      otherIcons.push(appIcon);
+   }
+
+   this.icons = [];
+   this._arrows = [];
+   for (let i = 0; i < workspaceIcons.length; i++)
+      this._addIcon(workspaceIcons[i]);
+   if (workspaceIcons.length > 0 && otherIcons.length > 0)
+      addSep();
+   for (let i = 0; i < otherIcons.length; i++)
+      this._addIcon(otherIcons[i]);
+
+   this._curApp = -1;
+   this._iconSize = 0;
+   this._altTabPopup = altTabPopup;
+   this._mouseTimeOutId = 0;
+
+   //3.8
+   this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
+}
+
+function newCreateSwitcherPopup() {
+
+   let tracker = Shell.WindowTracker.get_default();
+   let windows = global.display.get_tab_list(Meta.TabList.NORMAL, global.screen, global.screen.get_active_workspace());
+   let allApps = Shell.AppSystem.get_default().get_running ();
 
    // windows is only the windows on the current workspace. For
    // each one, if it corresponds to an app we know, move that
@@ -42,49 +81,24 @@ function newGetAppList() {
       }
    }
 
-   // Now @apps is a list of apps on the current workspace, in
-   // standard Alt+Tab order (MRU except for minimized windows),
-   // and allApps is a list of apps that only appear on other
-   // workspaces, sorted by user_time, which is good enough.
-   return [apps, allApps];
-   */
-   /*
-    * adaptation
-    */
-   /*
-   let apps = global.display.get_tab_list(Meta.TabList.NORMAL, global.screen, global.screen.get_active_workspace());
-   let otherApps = global.display.get_tab_list(Meta.TabList.NORMAL, global.screen, null);
-   return [apps, otherApps];
-   */
-   return null;
+   let finalApps = apps.concat(allApps);
+
+   if (finalApps.length == 0)
+      return false;
+
+   this._switcherList = new AltTab.AppSwitcher(apps, allApps, this);
+   this._items = this._switcherList.icons;
+
+   return true;
 }
 
-/* HelloTest */
-function _hideHello() {
-   Main.uiGroup.remove_actor(text);
-   text = null;
+
+function newAddSeparator() {
+   let box = new St.Bin({ style_class: 'separator' });
+   this._separator = box;
+   this._list.add_actor(box);
 }
 
-function _showHello() {
-   if (!text) {
-      text = new St.Label({ style_class: 'helloworld-label', text: "Hello, world!" });
-      Main.uiGroup.add_actor(text);
-   }
-
-   text.opacity = 255;
-
-   let monitor = Main.layoutManager.primaryMonitor;
-
-   text.set_position(Math.floor(monitor.width / 2 - text.width / 2),
-         Math.floor(monitor.height / 2 - text.height / 2));
-
-   Tweener.addTween(text,
-         { opacity: 0,
-            time: 2,
-      transition: 'easeOutQuad',
-      onComplete: _hideHello });
-}
-/* end HelloTest */
 
 function init() {
    //test
@@ -98,17 +112,22 @@ function init() {
       style_class: 'system-status-icon' });
 
    button.set_child(icon);
-   button.connect('button-press-event', _showHello);
    //end of test
-   oldGetAppList = AltTab.AppSwitcherPopup.prototype._getAppList;//mine
+   oldCreateSwitcherPopup = AltTab.AppSwitcherPopup.prototype._createSwitcher;//mine
+   oldInitAppSwitcher = AltTab.AppSwitcher.prototype._init;//mine
+   oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator;//mine
 }
 
 function enable() {
    Main.panel._rightBox.insert_child_at_index(button, 0);//test
-   AltTab.AppSwitcherPopup.prototype._getAppList = newGetAppList;//mine
+   AltTab.AppSwitcherPopup.prototype._createSwitcher = newCreateSwitcherPopup;//mine
+   AltTab.AppSwitcher.prototype._init = _newInitAppSwitcher;//mine
+   SwitcherPopup.SwitcherList.prototype._addSeparator = newAddSeparator;//mine
 }
 
 function disable() {
    Main.panel._rightBox.remove_child(button);//test
-   AltTab.AppSwitcherPopup.prototype._getAppList = oldGetAppList;//mine
+   AltTab.AppSwitcherPopup.prototype._createSwitcher = oldCreateSwitcherPopup;//mine
+   AltTab.AppSwitcher.prototype._init = oldInitAppSwitcher;//mine
+   SwitcherPopup.SwitcherList.prototype._addSeparator = oldAddSeparator;//mine
 }
