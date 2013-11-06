@@ -9,7 +9,7 @@ re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab:
 * Installation:
  - cd ~/.local/share/gnome-shell/extensions
  - git clone https://github.com/KrahnacK/workspaceAltTab.git
- - mv workspaceAltTab workspaceAltTab@hotwok
+ - mv workspaceAltTab workspaceAltTab@KrahnacK
  - restart gnome-shell: Alt+F2 + r, or gnome-shell --replace & 
 
 * Debug instructions for gnome-shell extensions: 
