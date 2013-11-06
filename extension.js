@@ -13,16 +13,60 @@ const Main = imports.ui.main;
 
 let oldCreateSwitcherPopup;
 let oldInitAppSwitcher;
-let oldAddSeparator;
+let oldGetPreferredHeightAppSwitcher;
+
+
+function newGetPreferredHeightAppSwitcher (actor, forWidth, alloc) {
+   let j = 0;
+   while(this._items.length > 1 && this._items[j].style_class != 'item-box') {
+      j++;
+   }
+   let themeNode = this._items[j].get_theme_node();
+   let iconPadding = themeNode.get_horizontal_padding();
+   let iconBorder = themeNode.get_border_width(St.Side.LEFT) + themeNode.get_border_width(St.Side.RIGHT);
+   let [iconMinHeight, iconNaturalHeight] = this.icons[j].label.get_preferred_height(-1);
+   let iconSpacing = iconNaturalHeight + iconPadding + iconBorder;
+   let totalSpacing = this._list.spacing * (this._items.length - 1);
+   if (this._separator)
+      totalSpacing += this._separator.width + this._list.spacing;
+
+   // We just assume the whole screen here due to weirdness happing with the passed width
+   let primary = Main.layoutManager.primaryMonitor;
+   let parentPadding = this.actor.get_parent().get_theme_node().get_horizontal_padding();
+   let availWidth = primary.width - parentPadding - this.actor.get_theme_node().get_horizontal_padding();
+   let height = 0;
+
+   for(let i =  0; i < AltTab.iconSizes.length; i++) {
+      this._iconSize = AltTab.iconSizes[i];
+      height = AltTab.iconSizes[i] + iconSpacing;
+      let w = height * this._items.length + totalSpacing;
+      if (w <= availWidth)
+         break;
+   }
+
+   if (this._items.length == 1) {
+      this._iconSize = AltTab.iconSizes[0];
+      height = AltTab.iconSizes[0] + iconSpacing;
+   }
+
+   for(let i = 0; i < this.icons.length; i++) {
+      if (this.icons[i].icon != null)
+         break;
+      this.icons[i].set_size(this._iconSize);
+   }
+
+   alloc.min_size = height;
+   alloc.natural_size = height;
+}
 
 function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    var parent = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._init);
    var addSep = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._addSeparator);
 
-   //gnome-shell 3.8
+   //from gnome-shell 3.8
    parent(true);
 
-   //gnome-shell 3.6 part
+   //from gnome-shell 3.6 part
 
    // Construct the AppIcons, add to the popup
    let activeWorkspace = global.screen.get_active_workspace();
@@ -55,7 +99,7 @@ function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    this._altTabPopup = altTabPopup;
    this._mouseTimeOutId = 0;
 
-   //and end with a gnome-shell 3.8 part
+   //and end with a part from gnome-shell 3.8
    this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
 }
 
@@ -78,9 +122,7 @@ function newCreateSwitcherPopup() {
       }
    }
 
-   let finalApps = apps.concat(allApps);
-
-   if (finalApps.length == 0)
+   if (apps.length == 0 && allApps.length == 0)
       return false;
 
    this._switcherList = new AltTab.AppSwitcher(apps, allApps, this);
@@ -89,6 +131,10 @@ function newCreateSwitcherPopup() {
    return true;
 }
 
+//SwitcherList modifications
+let oldAddSeparator;
+let oldGetPreferredWidth;
+let oldAllocate;
 
 function newAddSeparator() {
    let box = new St.Bin({ style_class: 'separator' });
@@ -96,21 +142,98 @@ function newAddSeparator() {
    this._list.add_actor(box);
 }
 
+function newGetPreferredWidth(actor, forHeight, alloc) {
+   let [maxChildMin, maxChildNat] = this._maxChildWidth(forHeight);
+
+   let separatorWidth = 0;
+   if (this._separator) {
+      let [sepMin, sepNat] = this._separator.get_preferred_width(forHeight);
+      separatorWidth = sepNat + this._list.spacing;
+   }
+
+   let totalSpacing = this._list.spacing * (this._items.length - 1);
+   alloc.min_size = this._items.length * maxChildMin + separatorWidth + totalSpacing;
+   alloc.natural_size = alloc.min_size;
+   this._minSize = alloc.min_size;
+}
+
+function newAllocate(actor, box, flags) {
+   let childHeight = box.y2 - box.y1;
+
+   let [maxChildMin, maxChildNat] = this._maxChildWidth(childHeight);
+   let totalSpacing = this._list.spacing * (this._items.length - 1);
+
+   let separatorWidth = 0;
+   if (this._separator) {
+      let [sepMin, sepNat] = this._separator.get_preferred_width(childHeight);
+      separatorWidth = sepNat;
+      totalSpacing += this._list.spacing;
+   }
+
+   let childWidth = Math.floor(Math.max(0, box.x2 - box.x1 - totalSpacing - separatorWidth) / this._items.length);
+
+   let x = 0;
+   let children = this._list.get_children();
+   let childBox = new Clutter.ActorBox();
+
+   let primary = Main.layoutManager.primaryMonitor;
+   let parentRightPadding = this.actor.get_parent().get_theme_node().get_padding(St.Side.RIGHT);
+
+   for (let i = 0; i < children.length; i++) {
+      if (this._items.indexOf(children[i]) != -1) {
+         let [childMin, childNat] = children[i].get_preferred_height(childWidth);
+         let vSpacing = (childHeight - childNat) / 2;
+         childBox.x1 = x;
+         childBox.y1 = vSpacing;
+         childBox.x2 = x + childWidth;
+         childBox.y2 = childBox.y1 + childNat;
+         children[i].allocate(childBox, flags);
+
+         x += this._list.spacing + childWidth;
+      } else if (children[i] == this._separator) {
+         // We want the separator to be more compact than the rest.
+         childBox.x1 = x;
+         childBox.y1 = 0;
+         childBox.x2 = x + separatorWidth;
+         childBox.y2 = childHeight;
+         children[i].allocate(childBox, flags);
+         x += this._list.spacing + separatorWidth;
+      } else {
+         // Something else, eg, AppSwitcher's arrows;
+         // we don't allocate it.
+      }
+   }
+}
 
 function init() {
    oldCreateSwitcherPopup = AltTab.AppSwitcherPopup.prototype._createSwitcher;
    oldInitAppSwitcher = AltTab.AppSwitcher.prototype._init;
-   oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator;
+   oldGetPreferredHeightAppSwitcher = AltTab.AppSwitcher.prototype._getPreferredHeight;
+
+   //SwitcherList modifications
+   oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator; //inexistant as of now
+   oldGetPreferredWidth = SwitcherPopup.SwitcherList.prototype._getPreferredWidth;
+   oldAllocate = SwitcherPopup.SwitcherList.prototype._allocate;
 }
 
 function enable() {
    AltTab.AppSwitcherPopup.prototype._createSwitcher = newCreateSwitcherPopup;
    AltTab.AppSwitcher.prototype._init = _newInitAppSwitcher;
+   AltTab.AppSwitcher.prototype._getPreferredHeight = newGetPreferredHeightAppSwitcher;
+
+   //SwitcherList modifications
    SwitcherPopup.SwitcherList.prototype._addSeparator = newAddSeparator;
+   SwitcherPopup.SwitcherList.prototype._allocate = newAllocate;
+   SwitcherPopup.SwitcherList.prototype._getPreferredWidth= newGetPreferredWidth;
 }
 
 function disable() {
    AltTab.AppSwitcherPopup.prototype._createSwitcher = oldCreateSwitcherPopup;
    AltTab.AppSwitcher.prototype._init = oldInitAppSwitcher;
+   AltTab.AppSwitcher.prototype._getPreferredHeight = oldGetPreferredHeightAppSwitcher;
+   
+   //SwitcherList modifications
    SwitcherPopup.SwitcherList.prototype._addSeparator = oldAddSeparator;
+   SwitcherPopup.SwitcherList.prototype._allocate = oldAllocate;
+   SwitcherPopup.SwitcherList.prototype._getPreferredWidth= oldGetPreferredWidth;
 }
