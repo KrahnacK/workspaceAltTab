@@ -14,7 +14,55 @@ const Main = imports.ui.main;
 let oldCreateSwitcherPopup;
 let oldInitAppSwitcher;
 let oldGetPreferredHeightAppSwitcher;
+let oldInitThumbnailList;
 
+function newInitThumbnailList (windows) {
+   var parent = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._init);
+   var addSep = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._addSeparator);
+   parent(false);
+
+   let activeWorkspace = global.screen.get_active_workspace();
+   
+   // We fake the value of 'separatorAdded' when the app has no window
+   // on the current workspace, to avoid displaying a useless separator in
+   // that case.
+   let separatorAdded = windows.length == 0 || windows[0].get_workspace() != activeWorkspace;
+
+   this._labels = new Array();
+   this._thumbnailBins = new Array();
+   this._clones = new Array();
+   this._windows = windows;
+
+   for (let i = 0; i < windows.length; i++) {
+      if (!separatorAdded && windows[i].get_workspace() != activeWorkspace) {
+         addSep();
+         separatorAdded = true;
+      }
+
+      let box = new St.BoxLayout({ style_class: 'thumbnail-box',
+         vertical: true });
+
+      let bin = new St.Bin({ style_class: 'thumbnail' });
+
+      box.add_actor(bin);
+      this._thumbnailBins.push(bin);
+
+      let title = windows[i].get_title();
+      if (title) {
+         let name = new St.Label({ text: title });
+         // St.Label doesn't support text-align so use a Bin
+         let bin = new St.Bin({ x_align: St.Align.MIDDLE });
+         this._labels.push(bin);
+         bin.add_actor(name);
+         box.add_actor(bin);
+
+         this.addItem(box, name);
+      } else {
+         this.addItem(box, null);
+      }
+   }
+
+}
 
 function newGetPreferredHeightAppSwitcher (actor, forWidth, alloc) {
    let j = 0;
@@ -209,6 +257,7 @@ function init() {
    oldCreateSwitcherPopup = AltTab.AppSwitcherPopup.prototype._createSwitcher;
    oldInitAppSwitcher = AltTab.AppSwitcher.prototype._init;
    oldGetPreferredHeightAppSwitcher = AltTab.AppSwitcher.prototype._getPreferredHeight;
+   oldInitThumbnailList = AltTab.ThumbnailList.prototype._init;
 
    //SwitcherList modifications
    oldAddSeparator = SwitcherPopup.SwitcherList.prototype._addSeparator; //inexistant as of now
@@ -220,6 +269,7 @@ function enable() {
    AltTab.AppSwitcherPopup.prototype._createSwitcher = newCreateSwitcherPopup;
    AltTab.AppSwitcher.prototype._init = _newInitAppSwitcher;
    AltTab.AppSwitcher.prototype._getPreferredHeight = newGetPreferredHeightAppSwitcher;
+   AltTab.ThumbnailList.prototype._init = newInitThumbnailList;
 
    //SwitcherList modifications
    SwitcherPopup.SwitcherList.prototype._addSeparator = newAddSeparator;
@@ -231,6 +281,7 @@ function disable() {
    AltTab.AppSwitcherPopup.prototype._createSwitcher = oldCreateSwitcherPopup;
    AltTab.AppSwitcher.prototype._init = oldInitAppSwitcher;
    AltTab.AppSwitcher.prototype._getPreferredHeight = oldGetPreferredHeightAppSwitcher;
+   AltTab.ThumbnailList.prototype._init = oldInitThumbnailList;
    
    //SwitcherList modifications
    SwitcherPopup.SwitcherList.prototype._addSeparator = oldAddSeparator;
