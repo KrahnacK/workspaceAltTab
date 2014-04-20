@@ -124,17 +124,15 @@ function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    //re-order localApps in case a window from another 
    //workspace was raised
    let localAppIndex = -1;
-   let raisedApps = [];
    for (let i = 0; i < localApps.length; i++) {
       let isRaised = true;
       let w = localApps[i].get_windows();
       for (let j = 0; j < w.length; j++) {
          isRaised &= w[j].get_workspace() != activeWorkspace;
       }
-      if (isRaised) {
-         raisedApps.push(localApps[i]);
-      } else if (localAppIndex == -1) {
+      if (!isRaised) {
          localAppIndex = i;
+         break;
       }
    }
    let localAppToMove = localApps.splice(localAppIndex, 1);
