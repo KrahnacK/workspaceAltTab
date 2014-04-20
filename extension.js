@@ -120,6 +120,26 @@ function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
    let activeWorkspace = global.screen.get_active_workspace();
    let workspaceIcons = [];
    let otherIcons = [];
+
+   //re-order localApps in case a window from another 
+   //workspace was raised
+   let localAppIndex = -1;
+   let raisedApps = [];
+   for (let i = 0; i < localApps.length; i++) {
+      let isRaised = true;
+      let w = localApps[i].get_windows();
+      for (let j = 0; j < w.length; j++) {
+         isRaised &= w[j].get_workspace() != activeWorkspace;
+      }
+      if (isRaised) {
+         raisedApps.push(localApps[i]);
+      } else if (localAppIndex == -1) {
+         localAppIndex = i;
+      }
+   }
+   let localAppToMove = localApps.splice(localAppIndex, 1);
+   localApps.unshift(localAppToMove[0]);
+
    for (let i = 0; i < localApps.length; i++) {
       let appIcon = new AltTab.AppIcon(localApps[i]);
       // Cache the window list now; we don't handle dynamic changes here,
