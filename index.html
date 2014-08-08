@@ -33,19 +33,28 @@
       <section id="main_content" class="inner">
         <p>*** Workspace-aware AltTab for gnome-shell 3.8</p>
 
-<ul>
-<li>
-<p>What's that:
-re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab:</p>
+<h1>
+<a name="whats-that" class="anchor" href="#whats-that"><span class="octicon octicon-link"></span></a>What's that</h1>
+
+<h2>
+<a name="re-enables-gnome-shell-36-alttab-behaviour-in-later-versions-so-that-alttab" class="anchor" href="#re-enables-gnome-shell-36-alttab-behaviour-in-later-versions-so-that-alttab"><span class="octicon octicon-link"></span></a>re-enables gnome-shell 3.6 AltTab behaviour in later versions, so that AltTab</h2>
 
 <ul>
-<li>Groups by applications (uses the AppSwitcher, not instead of WindowSwitcher)</li>
-<li>Is not restricted to the current workspace</li>
-<li>Sorts the Apps according to the windows running in the current workspace (it prefers apps from current workspace, but display apps from all workspaces)</li>
-</ul>
-</li>
-<li>
-<p>Installation:</p>
+<li>Groups by applications (uses the AppSwitcher, not instead of the simple WindowSwitcher)</li>
+<li>Is not restricted to the current workspace (diplays every window)</li>
+<li>Sorts the Apps and Windows according to who's running where (current workspace first, then others)</li>
+</ul><h1>
+<a name="official-gnome-extension-url" class="anchor" href="#official-gnome-extension-url"><span class="octicon octicon-link"></span></a>Official Gnome Extension URL</h1>
+
+<p><a href="https://extensions.gnome.org/extension/748/workspacealttab/">https://extensions.gnome.org/extension/748/workspacealttab/</a></p>
+
+<h1>
+<a name="screenshot" class="anchor" href="#screenshot"><span class="octicon octicon-link"></span></a>Screenshot</h1>
+
+<p><img src="https://extensions.gnome.org/static/extension-data/screenshots/screenshot_748.png" alt="screenshot"></p>
+
+<h1>
+<a name="manual-install-instructions" class="anchor" href="#manual-install-instructions"><span class="octicon octicon-link"></span></a>Manual install instructions</h1>
 
 <ul>
 <li>cd ~/.local/share/gnome-shell/extensions</li>
@@ -53,16 +62,12 @@ re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab:</p>
 </li>
 <li>mv workspaceAltTab workspaceAltTab@KrahnacK</li>
 <li>restart gnome-shell: Alt+F2 + r, or gnome-shell --replace &amp; </li>
-</ul>
-</li>
-<li>
-<p>Debug instructions for gnome-shell extensions: </p>
+</ul><h1>
+<a name="debug-instructions-for-gnome-shell-extensions" class="anchor" href="#debug-instructions-for-gnome-shell-extensions"><span class="octicon octicon-link"></span></a>Debug instructions for gnome-shell extensions</h1>
 
 <ul>
 <li>see the logs in ~/.cache/gdm/session.log or ~/.xsession-errors</li>
 <li>if none of the above work, then get the shell to output in a file: gnome-shell --replace &amp;&gt; shelllog &amp;</li>
-</ul>
-</li>
 </ul>
       </section>
     </div>
