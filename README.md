@@ -1,7 +1,7 @@
 *** Workspace-aware AltTab for gnome-shell 3.8
 
 <h1>What's that</h1>
-<h2>re-enables gnome-shell 3.6 AltTab behaviour in 3.8, so that AltTab</h2>
+<h2>re-enables gnome-shell 3.6 AltTab behaviour in later versions, so that AltTab</h2>
  - Groups by applications (uses the AppSwitcher, not instead of the simple WindowSwitcher)
  - Is not restricted to the current workspace (diplays every window)
  - Sorts the Apps and Windows according to who's running where (current workspace first, then others)
