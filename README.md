@@ -1,4 +1,4 @@
-*** Workspace-aware AltTab for gnome-shell 3.8
+*** Workspace-aware AltTab for gnome-shell (3.8 and higher)
 
 <h1>What's that</h1>
 <h2>re-enables gnome-shell 3.6 AltTab behaviour in later versions, so that AltTab</h2>
