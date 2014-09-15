@@ -1,1 +1,1 @@
-{"shell-version": ["3.8","3.10"], "uuid": "workspaceAltTab@KrahnacK", "name": "workspaceAltTab", "description": "AltTab that groups by window and sort according to current workspace (as in gnome-shell 3.6)" }
+{"shell-version": ["3.8","3.10","3.12"], "uuid": "workspaceAltTab@KrahnacK", "name": "workspaceAltTab", "description": "AltTab that groups by window and sort according to current workspace (as in gnome-shell 3.6)" }

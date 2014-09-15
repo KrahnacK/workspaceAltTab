@@ -1,5 +1,7 @@
 /* -*- mode: js; js-basic-offset: 4; indent-tabs-mode: nil -*- */
 
+const Config = imports.misc.config;
+
 const Clutter = imports.gi.Clutter;
 const Lang = imports.lang;
 const Meta = imports.gi.Meta;
@@ -15,6 +17,12 @@ let oldCreateSwitcherPopup;
 let oldInitAppSwitcher;
 let oldGetPreferredHeightAppSwitcher;
 let oldInitThumbnailList;
+
+function isOlderThan(version) {
+   var myver = Config.PACKAGE_VERSION.split(".");
+   var refver = version.split(".");
+   return Number(myver[1]) < Number(refver[1]);
+}
 
 function newInitThumbnailList (windows) {
    var parent = Lang.bind(this, SwitcherPopup.SwitcherList.prototype._init);
@@ -65,46 +73,69 @@ function newInitThumbnailList (windows) {
 }
 
 function newGetPreferredHeightAppSwitcher (actor, forWidth, alloc) {
-   let j = 0;
-   while(this._items.length > 1 && this._items[j].style_class != 'item-box') {
-      j++;
+   if (isOlderThan("3.12.0")) { //for gnome-shell prior to 3.12
+      let j = 0;
+      while(this._items.length > 1 && this._items[j].style_class != 'item-box') {
+         j++;
+      }
+      let themeNode = this._items[j].get_theme_node();
+      let iconPadding = themeNode.get_horizontal_padding();
+      let iconBorder = themeNode.get_border_width(St.Side.LEFT) + themeNode.get_border_width(St.Side.RIGHT);
+      let [iconMinHeight, iconNaturalHeight] = this.icons[j].label.get_preferred_height(-1);
+      let iconSpacing = iconNaturalHeight + iconPadding + iconBorder;
+      let totalSpacing = this._list.spacing * (this._items.length - 1);
+      if (this._separator)
+         totalSpacing += this._separator.width + this._list.spacing;
+
+      // We just assume the whole screen here due to weirdness happing with the passed width
+      let primary = Main.layoutManager.primaryMonitor;
+      let parentPadding = this.actor.get_parent().get_theme_node().get_horizontal_padding();
+      let availWidth = primary.width - parentPadding - this.actor.get_theme_node().get_horizontal_padding();
+      let height = 0;
+
+      for(let i =  0; i < AltTab.iconSizes.length; i++) {
+         this._iconSize = AltTab.iconSizes[i];
+         height = AltTab.iconSizes[i] + iconSpacing;
+         let w = height * this._items.length + totalSpacing;
+         if (w <= availWidth)
+            break;
+      }
+
+      if (this._items.length == 1) {
+         this._iconSize = AltTab.iconSizes[0];
+         height = AltTab.iconSizes[0] + iconSpacing;
+      }
+
+      for(let i = 0; i < this.icons.length; i++) {
+         if (this.icons[i].icon != null)
+            break;
+         this.icons[i].set_size(this._iconSize);
+      }
+
+      alloc.min_size = height;
+      alloc.natural_size = height;
+   } else { //for gnome-shell 3.12+
+      //thanks to Pavel N. Krivitsky
+      this._setIconSize();
+
+      let maxChildMin = 0;
+      let maxChildNat = 0;
+
+      for (let i = 0; i < this._items.length; i++) {
+         let [childMin, childNat] = this._items[i].get_preferred_height(-1);
+         maxChildMin = Math.max(childMin, maxChildMin);
+         maxChildNat = Math.max(childNat, maxChildNat);
+      }
+
+      if (this._squareItems) {
+         let [childMin, childNat] = this._maxChildWidth(-1);
+         maxChildMin = Math.max(childMin, maxChildMin);
+         maxChildNat = maxChildMin;
+      }
+
+      alloc.min_size = maxChildMin;
+      alloc.natural_size = maxChildNat;
    }
-   let themeNode = this._items[j].get_theme_node();
-   let iconPadding = themeNode.get_horizontal_padding();
-   let iconBorder = themeNode.get_border_width(St.Side.LEFT) + themeNode.get_border_width(St.Side.RIGHT);
-   let [iconMinHeight, iconNaturalHeight] = this.icons[j].label.get_preferred_height(-1);
-   let iconSpacing = iconNaturalHeight + iconPadding + iconBorder;
-   let totalSpacing = this._list.spacing * (this._items.length - 1);
-   if (this._separator)
-      totalSpacing += this._separator.width + this._list.spacing;
-
-   // We just assume the whole screen here due to weirdness happing with the passed width
-   let primary = Main.layoutManager.primaryMonitor;
-   let parentPadding = this.actor.get_parent().get_theme_node().get_horizontal_padding();
-   let availWidth = primary.width - parentPadding - this.actor.get_theme_node().get_horizontal_padding();
-   let height = 0;
-
-   for(let i =  0; i < AltTab.iconSizes.length; i++) {
-      this._iconSize = AltTab.iconSizes[i];
-      height = AltTab.iconSizes[i] + iconSpacing;
-      let w = height * this._items.length + totalSpacing;
-      if (w <= availWidth)
-         break;
-   }
-
-   if (this._items.length == 1) {
-      this._iconSize = AltTab.iconSizes[0];
-      height = AltTab.iconSizes[0] + iconSpacing;
-   }
-
-   for(let i = 0; i < this.icons.length; i++) {
-      if (this.icons[i].icon != null)
-         break;
-      this.icons[i].set_size(this._iconSize);
-   }
-
-   alloc.min_size = height;
-   alloc.natural_size = height;
 }
 
 function _newInitAppSwitcher(localApps, otherApps, altTabPopup) {
