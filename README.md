@@ -2,9 +2,10 @@
 
 <h1>What's that</h1>
 <h2>re-enables gnome-shell 3.6 AltTab behaviour in later versions, so that AltTab</h2>
- - Groups by applications (uses the AppSwitcher, not instead of the simple WindowSwitcher)
+ - Main Goal: ensure that a quick Alt-Tab won't switch workspace if you have at least 2 windows opened in the current workspace
+ - Groups by applications (uses the AppSwitcher, instead of the simple WindowSwitcher)
  - Is not restricted to the current workspace (diplays every window)
- - Sorts the Aps and Windows according to who's running where (current workspace first, then others)
+ - Sorts the Apps and Windows according to who's running where (current workspace first, then others)
 
 <h1>Official Gnome Extension URL</h1>
 https://extensions.gnome.org/extension/748/workspacealttab/
